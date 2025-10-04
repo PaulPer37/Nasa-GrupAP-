@@ -3,13 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Selector de Coordenadas y API de Contaminación</title>
-    
-    <!-- Importamos la librería del mapa (Leaflet.js) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
     <style>
-        /* Estilos para que la página se vea bien */
         html, body { height: 100%; margin: 0; font-family: sans-serif; }
         body { display: flex; flex-direction: row; }
         #map { width: 70%; height: 100%; border-right: 2px solid #ccc; }
@@ -20,11 +16,7 @@
     </style>
 </head>
 <body>
-
-    <!-- El contenedor donde se dibujará el mapa -->
     <div id="map"></div>
-
-    <!-- El panel lateral que mostrará la información -->
     <div id="info-panel">
         <h2>Información del Clic</h2>
         <p>Haz clic en el mapa para seleccionar un punto.</p>
@@ -35,25 +27,35 @@
         <h3>Respuesta de la API de Contaminación:</h3>
         <pre id="api-results">Esperando un clic en el mapa...</pre>
     </div>
-
 <script>
-    // --- 1. Inicializar el Mapa ---
-    const map = L.map('map').setView([20, 0], 2);
+    // --- 1. Inicializar el Mapa (CON LÍMITES) ---
+    const map = L.map('map', {
+        minZoom: 2,
+    }).setView([20, 0], 2);
+
+    const bounds = L.latLngBounds([
+        [-90, -180],
+        [90, 180]
+    ]);
+    map.setMaxBounds(bounds);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+        attribution: '&copy; OpenStreetMap contributors',
+        noWrap: true
     }).addTo(map);
 
-    // --- 2. Referencias a los Elementos del Panel ---
+    // --- 2. Referencias a los Elementos del Panel (sin cambios) ---
     const latDisplay = document.getElementById('lat-display');
     const lonDisplay = document.getElementById('lon-display');
     const apiResults = document.getElementById('api-results');
     let marker;
 
-    // --- 3. Escuchar Clics en el Mapa ---
+    // --- 3. Escuchar Clics en el Mapa (CON LA CORRECCIÓN) ---
     map.on('click', function(e) {
         const coords = e.latlng;
         const lat = coords.lat;
-        const lon = coords.lng;
+        // La línea del error ha sido corregida a su versión original
+        const lon = coords.lng; 
 
         latDisplay.textContent = lat.toFixed(6);
         lonDisplay.textContent = lon.toFixed(6);
@@ -64,14 +66,12 @@
             marker = L.marker([lat, lon]).addTo(map);
         }
         
-        // Llamar a nuestra API de Django con las coordenadas obtenidas
         callPollutionApi(lat, lon);
     });
 
-    // --- 4. Función para Llamar a la API de Django ---
+    // --- 4. Función para Llamar a la API de Django (sin cambios) ---
     function callPollutionApi(lat, lon) {
         apiResults.textContent = 'Llamando a la API de Django...';
-        // Esta URL apunta a la API que tienes corriendo en tu máquina
         const apiUrl = `http://127.0.0.1:8000/api/pollution/?lat=${lat}&lon=${lon}`;
 
         fetch(apiUrl)
@@ -82,7 +82,6 @@
                 return response.json();
             })
             .then(data => {
-                // Muestra la respuesta completa de la API en formato JSON
                 apiResults.textContent = JSON.stringify(data, null, 2);
             })
             .catch(error => {
