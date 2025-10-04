@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Selector de Coordenadas y API de Contaminación</title>
+    
+    <!-- Importamos la librería del mapa (Leaflet.js) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        /* Estilos para que la página se vea bien */
+        html, body { height: 100%; margin: 0; font-family: sans-serif; }
+        body { display: flex; flex-direction: row; }
+        #map { width: 70%; height: 100%; border-right: 2px solid #ccc; }
+        #info-panel { width: 30%; height: 100%; padding: 20px; box-sizing: border-box; overflow-y: auto; background-color: #f9f9f9; }
+        h2 { margin-top: 0; }
+        #api-results { background-color: #e9e9e9; border: 1px solid #ddd; padding: 10px; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; min-height: 100px; }
+        code { background-color: #d4d4d4; padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <!-- El contenedor donde se dibujará el mapa -->
+    <div id="map"></div>
+
+    <!-- El panel lateral que mostrará la información -->
+    <div id="info-panel">
+        <h2>Información del Clic</h2>
+        <p>Haz clic en el mapa para seleccionar un punto.</p>
+        <h3>Coordenadas Seleccionadas:</h3>
+        <p><strong>Latitud:</strong> <code id="lat-display">N/A</code></p>
+        <p><strong>Longitud:</strong> <code id="lon-display">N/A</code></p>
+        <hr>
+        <h3>Respuesta de la API de Contaminación:</h3>
+        <pre id="api-results">Esperando un clic en el mapa...</pre>
+    </div>
+
+<script>
+    // --- 1. Inicializar el Mapa ---
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // --- 2. Referencias a los Elementos del Panel ---
+    const latDisplay = document.getElementById('lat-display');
+    const lonDisplay = document.getElementById('lon-display');
+    const apiResults = document.getElementById('api-results');
+    let marker;
+
+    // --- 3. Escuchar Clics en el Mapa ---
+    map.on('click', function(e) {
+        const coords = e.latlng;
+        const lat = coords.lat;
+        const lon = coords.lng;
+
+        latDisplay.textContent = lat.toFixed(6);
+        lonDisplay.textContent = lon.toFixed(6);
+
+        if (marker) {
+            marker.setLatLng([lat, lon]);
+        } else {
+            marker = L.marker([lat, lon]).addTo(map);
+        }
+        
+        // Llamar a nuestra API de Django con las coordenadas obtenidas
+        callPollutionApi(lat, lon);
+    });
+
+    // --- 4. Función para Llamar a la API de Django ---
+    function callPollutionApi(lat, lon) {
+        apiResults.textContent = 'Llamando a la API de Django...';
+        // Esta URL apunta a la API que tienes corriendo en tu máquina
+        const apiUrl = `http://127.0.0.1:8000/api/pollution/?lat=${lat}&lon=${lon}`;
+
+        fetch(apiUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error en la respuesta del servidor: ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Muestra la respuesta completa de la API en formato JSON
+                apiResults.textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                apiResults.textContent = `Error al llamar a la API:\n\n${error.message}\n\nAsegúrate de que tu servidor de Django esté corriendo con 'python manage.py runserver'.`;
+            });
+    }
+</script>
+</body>
+</html>

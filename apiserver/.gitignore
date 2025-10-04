@@ -1,0 +1,12 @@
+# Archivo .gitignore
+
+# Ignorar el archivo de variables de entorno
+.env
+
+# Ignorar la carpeta del entorno virtual
+api_env/
+
+# Otros archivos comunes de Python y Django
+__pycache__/
+*.pyc
+db.sqlite3
